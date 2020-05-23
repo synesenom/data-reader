@@ -77,7 +77,7 @@ const Dataset = (svg, rulers) => {
                 .on('mouseleave', () => g.classed('highlight', false));
             entry.append('div')
                 .attr('class', 'data-point-value')
-                .text(`(${x.toPrecision(2)}, ${y.toPrecision(2)})`);
+                .text(`(${x.toPrecision(3)}, ${y.toPrecision(3)})`);
             entry.append('div')
                 .attr('class', 'data-point-remove')
                 .html('&#10005;')
