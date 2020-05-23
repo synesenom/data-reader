@@ -1,0 +1,19 @@
+#dataset-marker {
+    stroke: black;
+    fill: yellowgreen;
+    cursor: pointer;
+}
+#dataset-marker:hover {
+    fill: crimson;
+}
+
+.dataset-group {
+    stroke: black;
+    stroke-width: 2px;
+    fill: royalblue;
+}
+
+.data-point.highlight {
+    fill: gold;
+}
+

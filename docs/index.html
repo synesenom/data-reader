@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://unpkg.com/d3@5.16.0/dist/d3.min.js"></script>
+    <script src="js/scale.js"></script>
+    <script src="js/ruler.js"></script>
+    <script src="js/dataset.js"></script>
+    <link rel="stylesheet" type="text/css" href="style/base.css"/>
+    <link rel="stylesheet" type="text/css" href="style/figure.css"/>
+    <link rel="stylesheet" type="text/css" href="style/manual.css"/>
+    <link rel="stylesheet" type="text/css" href="style/controls.css"/>
+    <link rel="stylesheet" type="text/css" href="style/ruler.css"/>
+    <link rel="stylesheet" type="text/css" href="style/dataset.css"/>
+    <title>data-reader</title>
+</head>
+<body>
+<div id="drop-area">
+    <div class="drop-area-title">Drop figure here</div>
+    <svg id="figure"></svg>
+</div>
+<div id="controls">
+    <div class="control-section">
+        <div class="control-section-title">HORIZONTAL RULER</div>
+        <div class="control-entry">
+            <label for="x-ruler-fixed" class="checkbox">Fix ruler
+                <input id="x-ruler-fixed" type="checkbox"/>
+                <span class="checkmark"></span>
+            </label>
+        </div>
+        <div class="control-entry">
+            <label for="x-ruler-start">Start value</label>
+            <input id="x-ruler-start" type="text"/>
+        </div>
+        <div class="control-entry">
+            <label for="x-ruler-end">End value</label>
+            <input id="x-ruler-end" type="text"/>
+        </div>
+    </div>
+
+    <div class="control-section">
+        <div class="control-section-title">VERTICAL RULER</div>
+        <div class="control-entry">
+            <label for="y-ruler-fixed" class="checkbox">Fix ruler
+                <input id="y-ruler-fixed" type="checkbox"/>
+                <span class="checkmark"></span>
+            </label>
+        </div>
+        <div class="control-entry">
+            <label for="y-ruler-start">Start value</label>
+            <input id="y-ruler-start" type="text"/>
+        </div>
+        <div class="control-entry">
+            <label for="y-ruler-end">End value</label>
+            <input id="y-ruler-end" type="text"/>
+        </div>
+    </div>
+
+    <div class="control-section">
+        <div class="control-section-title">MARKER</div>
+        <div class="control-entry">
+            <label for="dataset-marker-radius">Marker radius</label>
+            <input id="dataset-marker-radius" type="number" min="3" max="20" value="5"/>
+        </div>
+        <div class="control-entry">
+            <label for="dataset-display" class="checkbox">Display data
+                <input id="dataset-display" type="checkbox"/>
+                <span class="checkmark"></span>
+            </label>
+        </div>
+        <div class="control-entry">
+            <button id="dataset-save">Save data point</button>
+        </div>
+    </div>
+
+    <div class="control-section">
+        <div class="control-section-title">DATA</div>
+        <div class="control-entry tall">
+            <div id="dataset-data-points"></div>
+        </div>
+        <div class="control-entry">
+            <button id="dataset-download">Download data</button>
+        </div>
+    </div>
+</div>
+<div id="manual">
+    <div class="manual-title">What is this?</div>
+    <div class="manual-content">
+        This tool helps you read data points from a figure stored as an image.
+    </div>
+
+    <div class="manual-title">Setting up image and rulers</div>
+    <div class="manual-content">
+        Drop the image of the figure that contains the data points you want to measure.
+        Once the image is loaded, the green horizontal and vertical rulers as well as the data point marker will appear
+        on the top left corner.
+        You can drag the rulers' body and their end points with the mouse to fit them to the axes.
+        When the rulers are positioned, set their start and end values in the corresponding boxes and fix their position
+        to avoid further displacements.
+    </div>
+
+    <div class="manual-title">Measuring the data</div>
+    <div class="manual-content">
+        Use the green marker circle to drag to the data point you want to measure and then click on 'Save data point'.
+        This will add the data point to the dataset and also show its coordinates on the Dataset list.
+        You can display the collected data points on the figure by checking the box 'Display data'.
+        Also, on the Dataset list you can remove individual data points.
+        Once the data points are collected, you can download them in a CSV file by clicking on 'Download data'.
+    </div>
+
+    <div class="manual-title">Fine tuning positions</div>
+    <div class="manual-content">
+        The control elements (a ruler's body, its end points, or the data marker) can be selected for more fine
+        positional adjustments.
+        Click on a control element to select it: once it turns red, the selected element can be moved around with the
+        arrow keys (&larr;, &uarr;, &rarr; and &darr;).
+        The arrows move the currently selected control element by 0.2 pixel.
+    </div>
+</div>
+<script>
+    // Drag and drop function.
+    const dropArea = document.getElementById('drop-area');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        dropArea.classList.add('highlight');
+    }
+
+    function unhighlight() {
+        dropArea.classList.remove('highlight');
+    }
+
+    dropArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        // Get file from data transfer.
+        const file = e.dataTransfer.files[0];
+
+        // Create an image thatw e
+        const img = document.createElement('img');
+
+        // Create file reader that will read the image content.
+        const reader = new FileReader();
+        reader.onload = event => {
+            img.onload = () => {
+                // Add SVG with the image as background.
+                const svg = d3.select('#figure').html('');
+                svg.style('width', img.width + 'px')
+                    .style('height', img.height + 'px')
+                    .style('background-size', `${img.width}px ${img.height}px`)
+                    .style('background-repeat', 'no-repeat')
+                    .style('background-image', `url(${img.src})`);
+
+                // Remove drop title and border.
+                d3.select('.drop-area-title').style('display', 'none');
+                d3.select(dropArea).transition().duration(1000)
+                    .style('border-color', 'transparent');
+
+                // Add rulers.
+                const xRuler = Ruler(svg, 'x');
+                const yRuler = Ruler(svg, 'y');
+                const dataset = Dataset(svg, {
+                    x: xRuler,
+                    y: yRuler
+                });
+
+                // Key events.
+                let focus = undefined;
+                window.addEventListener('keydown', e => {
+                    if (typeof focus === 'undefined'
+                        || ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.code) === -1) {
+                        return;
+                    }
+
+                    switch (e.code) {
+                        case 'ArrowLeft':
+                            focus.shift(-0.2, 0);
+                            break;
+                        case 'ArrowRight':
+                            focus.shift(0.2, 0);
+                            break;
+                        case 'ArrowUp':
+                            focus.shift(0, -0.2);
+                            break;
+                        case 'ArrowDown':
+                            focus.shift(0, 0.2);
+                            break;
+                    }
+                    e.preventDefault();
+                });
+
+                function setFocus (node, elem) {
+                    // Remove class from all control elements.
+                    d3.selectAll('.control-element').classed('current-control', false);
+                    d3.select(node).classed('current-control', focus !== elem);
+
+                    // Update focus.
+                    focus = elem !== focus ? elem : undefined;
+                }
+
+                // Selections.
+                // Data marker.
+                d3.select('#dataset-marker')
+                    .on('click', function () { setFocus(this, dataset.marker) });
+
+                // X ruler.
+                d3.select('#x-ruler .ruler-line')
+                    .on('click', function () { setFocus(this, xRuler.line) });
+                d3.select('#x-ruler .ruler-start')
+                    .on('click', function () { setFocus(this, xRuler.start) });
+                d3.select('#x-ruler .ruler-end')
+                    .on('click', function () { setFocus(this, xRuler.end) });
+
+                // Y ruler.
+                d3.select('#y-ruler .ruler-line')
+                    .on('click', function () { setFocus(this, yRuler.line) });
+                d3.select('#y-ruler .ruler-start')
+                    .on('click', function () { setFocus(this, yRuler.start) });
+                d3.select('#y-ruler .ruler-end')
+                    .on('click', function () { setFocus(this, yRuler.end) });
+            }
+
+            // Set image source.
+            img.src = event.target.result;
+        };
+
+        // Read file.
+        reader.readAsDataURL(img.file = file);
+    }
+
+
+    /*
+
+
+
+    // Load image.
+    //img.src = 'data/figure.png';
+     */
+</script>
+</body>
+</html>

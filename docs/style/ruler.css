@@ -1,0 +1,20 @@
+.ruler-line {
+    stroke: yellowgreen;
+    stroke-width: 5px;
+    cursor: pointer;
+}
+.ruler-line:hover {
+    stroke: crimson;
+}
+
+.ruler-start,
+.ruler-end {
+    stroke: yellowgreen;
+    stroke-width: 5px;
+    fill: transparent;
+    cursor: pointer;
+}
+.ruler-start:hover,
+.ruler-end:hover {
+    stroke: crimson;
+}

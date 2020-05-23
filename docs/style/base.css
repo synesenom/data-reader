@@ -1,0 +1,17 @@
+@font-face {
+    font-family: 'Crimson Text';
+    src: url('fonts/CrimsonText-Regular.ttf');
+    font-weight: normal;
+}
+@font-face {
+    font-family: 'Montserrat';
+    src: url('fonts/Montserrat-light.otf');
+    font-weight: normal;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Montserrat', sans-serif;
+}
+
